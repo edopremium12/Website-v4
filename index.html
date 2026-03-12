@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suit Arena Pro | Multiplayer Real-time</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap');
+        :root { --neon-blue: #00d2ff; --neon-purple: #9d50bb; }
+        body { 
+            background: #0b0e14; color: #e2e8f0; font-family: 'Rajdhani', sans-serif;
+            background-image: radial-gradient(circle at 50% 50%, #1a1f2e 0%, #0b0e14 100%);
+        }
+        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+        .neon-border { border: 1px solid var(--neon-blue); box-shadow: 0 0 10px rgba(0, 210, 255, 0.3); }
+        .hidden-section { display: none !important; }
+        .chat-container { height: 150px; overflow-y: auto; scrollbar-width: thin; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <div id="loader" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500"></div>
+    </div>
+
+    <main class="flex-grow p-4 md:p-6 lg:p-10">
+        
+        <section id="auth-section" class="max-w-md mx-auto mt-10 p-8 glass-card rounded-3xl shadow-2xl hidden-section">
+            <div id="login-form">
+                <h1 class="text-4xl font-bold mb-8 text-center bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent italic">SUIT ARENA</h1>
+                <div class="space-y-4">
+                    <input type="email" id="login-email" placeholder="Email" class="w-full p-4 rounded-xl bg-slate-800/50 border border-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="password" id="login-password" placeholder="Password" class="w-full p-4 rounded-xl bg-slate-800/50 border border-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
+                    <button onclick="login()" class="w-full bg-gradient-to-r from-blue-600 to-blue-400 p-4 rounded-xl font-bold hover:scale-[1.02] transition-transform">Masuk Sekarang</button>
+                    <p class="text-center text-slate-400">Baru di sini? <span onclick="toggleAuth()" class="text-blue-400 cursor-pointer hover:underline">Daftar Akun</span></p>
+                </div>
+            </div>
+
+            <div id="register-form" class="hidden-section">
+                <h2 class="text-3xl font-bold mb-6 text-center text-emerald-400 uppercase tracking-widest">Registrasi</h2>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <input type="text" id="reg-name" placeholder="Nama" class="p-3 rounded-lg bg-slate-800 border border-slate-700">
+                    <input type="text" id="reg-city" placeholder="Kota" class="p-3 rounded-lg bg-slate-800 border border-slate-700">
+                </div>
+                <input type="email" id="reg-email" placeholder="Email" class="w-full p-3 mb-3 rounded-lg bg-slate-800 border border-slate-700">
+                <input type="password" id="reg-password" placeholder="Password" class="w-full p-3 mb-3 rounded-lg bg-slate-800 border border-slate-700">
+                <input type="password" id="reg-confirm" placeholder="Konfirmasi Password" class="w-full p-3 mb-6 rounded-lg bg-slate-800 border border-slate-700">
+                <button onclick="register()" class="w-full bg-emerald-600 p-4 rounded-xl font-bold">Buat Akun Pro</button>
+                <p class="mt-4 text-center"><span onclick="toggleAuth()" class="text-slate-400 cursor-pointer underline text-sm">Kembali ke Login</span></p>
+            </div>
+        </section>
+
+        <section id="dashboard-section" class="max-w-6xl mx-auto hidden-section">
+            <header class="flex flex-wrap justify-between items-center gap-4 mb-8 glass-card p-6 rounded-2xl border-l-4 border-blue-500">
+                <div class="flex items-center gap-4">
+                    <div class="h-14 w-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-2xl font-bold shadow-lg" id="user-avatar">?</div>
+                    <div>
+                        <h3 id="user-display-name" class="text-2xl font-bold tracking-tight">Memuat...</h3>
+                        <p class="text-sm text-blue-400 font-medium"><i class="fa-solid fa-location-dot"></i> <span id="user-city">...</span></p>
+                    </div>
+                </div>
+                <div class="flex gap-6 items-center">
+                    <div class="text-center">
+                        <p class="text-xs text-slate-400 uppercase">Total Menang</p>
+                        <p id="user-wins" class="text-2xl font-black text-yellow-400">0</p>
+                    </div>
+                    <button onclick="logout()" class="p-3 rounded-full hover:bg-red-500/20 text-red-400 transition-colors"><i class="fa-solid fa-power-off text-xl"></i></button>
+                </div>
+            </header>
+
+            <div class="grid lg:grid-cols-3 gap-6">
+                <div class="glass-card p-6 rounded-2xl flex flex-col justify-between">
+                    <div>
+                        <h4 class="text-xl font-bold mb-4 flex items-center gap-2 text-blue-400">
+                            <i class="fa-solid fa-plus-circle"></i> Markas Baru
+                        </h4>
+                        <p class="text-sm text-slate-400 mb-6">Buat arena kustom dan tantang temanmu atau biarkan pemain publik bergabung.</p>
+                        <input type="text" id="room-name-input" placeholder="Nama Room" class="w-full p-3 mb-3 rounded-lg bg-slate-900/50 border border-slate-700">
+                        <input type="text" id="room-pin-input" placeholder="PIN Keamanan (Opsional)" class="w-full p-3 mb-4 rounded-lg bg-slate-900/50 border border-slate-700 text-center tracking-widest">
+                    </div>
+                    <button onclick="createRoom()" class="w-full bg-blue-600 hover:bg-blue-500 p-3 rounded-xl font-bold shadow-lg shadow-blue-900/20">MULAI ARENA</button>
+                </div>
+
+                <div class="glass-card p-6 rounded-2xl lg:col-span-1">
+                    <h4 class="text-xl font-bold mb-4 flex items-center gap-2 text-emerald-400">
+                        <i class="fa-solid fa-earth-asia"></i> Arena Tersedia
+                    </h4>
+                    <div id="room-list" class="space-y-3 h-80 overflow-y-auto pr-2 custom-scroll">
+                        <div class="text-center text-slate-500 mt-10 italic">Mencari arena aktif...</div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6 rounded-2xl">
+                    <h4 class="text-xl font-bold mb-4 flex items-center gap-2 text-yellow-500">
+                        <i class="fa-solid fa-trophy"></i> Top Jawara
+                    </h4>
+                    <div id="leaderboard-list" class="space-y-2">
+                        </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="game-section" class="max-w-5xl mx-auto hidden-section">
+            <div class="grid lg:grid-cols-4 gap-6">
+                <div class="lg:col-span-3 space-y-6">
+                    <div class="glass-card p-4 rounded-xl flex justify-between items-center px-8">
+                        <span class="text-blue-400 font-bold"><i class="fa-solid fa-server mr-2"></i> <span id="current-room-name">Room</span></span>
+                        <div id="game-timer" class="text-xl font-mono bg-slate-900 px-4 py-1 rounded-full border border-slate-700">00:00</div>
+                        <button onclick="leaveRoom()" class="text-slate-400 hover:text-red-400"><i class="fa-solid fa-door-open"></i></button>
+                    </div>
+
+                    <div class="relative glass-card p-8 md:p-12 rounded-[3rem] overflow-hidden min-h-[400px] flex flex-col justify-center">
+                        <div class="absolute inset-0 opacity-10 pointer-events-none">
+                            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full border-[20px] border-white/10 rounded-full scale-150 animate-pulse"></div>
+                        </div>
+
+                        <div class="flex justify-around items-center gap-4 relative z-10">
+                            <div class="text-center group">
+                                <div id="p1-avatar" class="w-24 h-24 md:w-32 md:h-32 rounded-full bg-blue-600 mx-auto mb-4 border-4 border-slate-800 shadow-2xl flex items-center justify-center text-4xl">👤</div>
+                                <h3 id="p1-name" class="text-xl font-bold text-blue-400 mb-2 truncate max-w-[120px]">Menunggu...</h3>
+                                <div id="p1-badge" class="px-3 py-1 bg-blue-500/10 text-blue-400 rounded-full text-xs font-bold uppercase tracking-wider mb-4">Pemain 1</div>
+                                <div id="p1-visual" class="text-6xl md:text-8xl">❓</div>
+                            </div>
+
+                            <div class="text-4xl font-black italic text-slate-700">VS</div>
+
+                            <div class="text-center">
+                                <div id="p2-avatar" class="w-24 h-24 md:w-32 md:h-32 rounded-full bg-red-600 mx-auto mb-4 border-4 border-slate-800 shadow-2xl flex items-center justify-center text-4xl">👤</div>
+                                <h3 id="p2-name" class="text-xl font-bold text-red-400 mb-2 truncate max-w-[120px]">Menunggu...</h3>
+                                <div id="p2-badge" class="px-3 py-1 bg-red-500/10 text-red-400 rounded-full text-xs font-bold uppercase tracking-wider mb-4">Pemain 2</div>
+                                <div id="p2-visual" class="text-6xl md:text-8xl">❓</div>
+                            </div>
+                        </div>
+
+                        <div id="game-status-msg" class="text-center mt-12 text-3xl font-black tracking-widest text-white drop-shadow-lg"></div>
+                    </div>
+
+                    <div id="controls" class="flex justify-center gap-4 md:gap-8 bg-slate-900/50 p-6 rounded-3xl border border-slate-800">
+                        <button onclick="makeMove('batu')" class="group p-5 md:p-8 rounded-2xl bg-slate-800 hover:bg-blue-600 transition-all hover:-translate-y-2 shadow-xl border-b-4 border-slate-950 active:border-b-0">
+                            <span class="text-5xl md:text-6xl block group-hover:scale-110 transition-transform">🪨</span>
+                            <span class="block mt-2 font-bold text-xs uppercase tracking-tighter">Batu</span>
+                        </button>
+                        <button onclick="makeMove('kertas')" class="group p-5 md:p-8 rounded-2xl bg-slate-800 hover:bg-blue-600 transition-all hover:-translate-y-2 shadow-xl border-b-4 border-slate-950 active:border-b-0">
+                            <span class="text-5xl md:text-6xl block group-hover:scale-110 transition-transform">📄</span>
+                            <span class="block mt-2 font-bold text-xs uppercase tracking-tighter">Kertas</span>
+                        </button>
+                        <button onclick="makeMove('gunting')" class="group p-5 md:p-8 rounded-2xl bg-slate-800 hover:bg-blue-600 transition-all hover:-translate-y-2 shadow-xl border-b-4 border-slate-950 active:border-b-0">
+                            <span class="text-5xl md:text-6xl block group-hover:scale-110 transition-transform">✂️</span>
+                            <span class="block mt-2 font-bold text-xs uppercase tracking-tighter">Gunting</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="glass-card p-5 rounded-xl h-[450px] flex flex-col">
+                        <h4 class="font-bold border-b border-slate-700 pb-3 mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-comments text-blue-400"></i> Ruang Obrolan
+                        </h4>
+                        <div id="chat-box" class="flex-grow overflow-y-auto space-y-2 pr-2 custom-scroll mb-4 text-sm">
+                            </div>
+                        <div class="relative">
+                            <input type="text" id="chat-input" placeholder="Ketik pesan..." class="w-full p-3 pr-10 rounded-lg bg-slate-950 border border-slate-700 outline-none text-sm">
+                            <button onclick="sendChat()" class="absolute right-2 top-1/2 -translate-y-1/2 text-blue-500 hover:text-blue-400">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
